@@ -46,11 +46,19 @@ namespace EasyNetQ.Trace
 
                     List<string> columnlist = new List<string>();
 
-                    columnlist.Add("Message#");
+                    columnlist.Add("MessageNo");
                     columnlist.Add("Date Time");
                     columnlist.Add("Routing Key");
                     columnlist.Add("Exchange");
-                    columnlist.Add("Body");
+                    
+                    if (options.stats)
+                    {
+                        columnlist.Add("BodyLength");
+                    }
+                    else
+                    {
+                        columnlist.Add("Body");
+                    }
 
                     csvFile.WriteRow(columnlist);
 
@@ -198,8 +206,16 @@ namespace EasyNetQ.Trace
                 columnlist.Add(DateTime.Now.ToString());
                 columnlist.Add(basicDeliverEventArgs.RoutingKey);
                 columnlist.Add(decode((byte[])getHeader("exchange_name")));
-                columnlist.Add(decode(basicDeliverEventArgs.Body).ToString());
 
+                if (options.stats)
+                {
+                    columnlist.Add(decode(basicDeliverEventArgs.Body).Length.ToString());
+                }
+                else
+                {
+                    columnlist.Add(decode(basicDeliverEventArgs.Body).ToString());
+                }
+                
                 csvFile.WriteRow(columnlist);
 
             }
@@ -239,6 +255,9 @@ namespace EasyNetQ.Trace
 
         [Option('o', "output-csv", Required = false, HelpText = "CSV File name for output")]
         public string csvoutput { get; set; }
+
+        [Option('s', "stats only", Required = false, HelpText = "Used in conjunction with csv-output. Output message details for stats analysis (body not included)")]
+        public bool stats { get; set; } 
 
         [HelpOption]
         public string GetUsage()
