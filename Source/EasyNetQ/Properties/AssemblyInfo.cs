@@ -9,7 +9,7 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("EasyNetQ")]
 [assembly: AssemblyProduct("EasyNetQ")]
-[assembly: AssemblyCopyright("Copyright © EasyNetQ 2011")]
+[assembly: AssemblyCopyright("Copyright © EasyNetQ 2015")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 

@@ -1,6 +1,7 @@
 // ReSharper disable InconsistentNaming
 
 using System;
+using EasyNetQ.AutoSubscribe;
 using NUnit.Framework;
 
 namespace EasyNetQ.Tests
@@ -11,7 +12,7 @@ namespace EasyNetQ.Tests
         [Test]
         public void Should_create_consumer_instance_and_consume_message()
         {
-            var consumer = new DefaultMessageDispatcher();
+            var consumer = new DefaultAutoSubscriberMessageDispatcher();
             var message = new MyMessage();
             var consumedMessage = (MyMessage) null;
             

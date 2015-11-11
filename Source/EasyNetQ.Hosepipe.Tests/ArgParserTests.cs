@@ -1,7 +1,5 @@
 ﻿// ReSharper disable InconsistentNaming
 
-using System;
-using System.Text.RegularExpressions;
 using NUnit.Framework;
 
 namespace EasyNetQ.Hosepipe.Tests
@@ -87,19 +85,6 @@ namespace EasyNetQ.Hosepipe.Tests
 
             commandDetected.ShouldBeTrue();
             abcDetected.ShouldBeTrue();
-        }
-
-        [Test]
-        public void Should_regex_spike()
-        {
-            var regex = new Regex(@"([a-z])\:(.*)");
-
-            var match = regex.Match("a:hello world");
-            var key = match.Groups[1];
-            Console.Out.WriteLine("key = {0}", key);
-
-            var value = match.Groups[2];
-            Console.Out.WriteLine("value = {0}", value);
         }
     }
 }

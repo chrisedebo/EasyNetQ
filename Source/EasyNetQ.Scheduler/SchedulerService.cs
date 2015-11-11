@@ -40,6 +40,7 @@ namespace EasyNetQ.Scheduler
         {
             log.DebugWrite("Starting SchedulerService");
             bus.Subscribe<ScheduleMe>(schedulerSubscriptionId, OnMessage);
+            bus.Subscribe<UnscheduleMe>(schedulerSubscriptionId, OnMessage);
 
             publishTimer = new System.Threading.Timer(OnPublishTimerTick, null, 0, configuration.PublishIntervalSeconds * 1000);
             purgeTimer = new System.Threading.Timer(OnPurgeTimerTick, null, 0, configuration.PurgeIntervalSeconds * 1000);
@@ -68,25 +69,44 @@ namespace EasyNetQ.Scheduler
             scheduleRepository.Store(scheduleMe);
         }
 
+        public void OnMessage(UnscheduleMe unscheduleMe)
+        {
+            log.DebugWrite("Got Unschedule Message");
+            scheduleRepository.Cancel(unscheduleMe);
+        }
+
         public void OnPublishTimerTick(object state)
         {
             if (!bus.IsConnected) return;
             try
             {
                 using(var scope = new TransactionScope())
-                using(var channel = bus.Advanced.OpenPublishChannel())
                 {
                     var scheduledMessages = scheduleRepository.GetPending();
+
                     foreach (var scheduledMessage in scheduledMessages)
                     {
+                        // Binding key fallback is only provided here for backwards compatibility, will be removed in the future
                         log.DebugWrite(string.Format(
                             "Publishing Scheduled Message with Routing Key: '{0}'", scheduledMessage.BindingKey));
 
-                        var exchange = Exchange.DeclareTopic(scheduledMessage.BindingKey);
-                        channel.Publish(
-                            exchange, 
-                            scheduledMessage.BindingKey, 
-                            new MessageProperties{ Type = scheduledMessage.BindingKey }, 
+                        var exchangeName = scheduledMessage.Exchange ?? scheduledMessage.BindingKey;
+                        var exchangeType = scheduledMessage.ExchangeType ?? ExchangeType.Topic;
+
+                        var exchange = bus.Advanced.ExchangeDeclare(exchangeName, exchangeType);
+                        var messageProperties = scheduledMessage.MessageProperties;
+
+                        if (scheduledMessage.MessageProperties == null)
+                            messageProperties = new MessageProperties { Type = scheduledMessage.BindingKey };
+
+                        var routingKey = scheduledMessage.RoutingKey ?? scheduledMessage.BindingKey;
+
+                        bus.Advanced.Publish(
+                            exchange,
+                            routingKey,
+                            false,
+                            false,
+                            messageProperties,
                             scheduledMessage.InnerMessage);
                     }
 
@@ -101,7 +121,14 @@ namespace EasyNetQ.Scheduler
 
         private void OnPurgeTimerTick(object state)
         {
-            scheduleRepository.Purge();
+            try
+            {
+                scheduleRepository.Purge();
+            }
+            catch (Exception exception)
+            {
+                log.ErrorWrite("Error in schedule purge\r\n{0}", exception);
+            }
         }
     }
 }

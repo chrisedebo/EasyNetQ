@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Text;
 using System.Threading;
-using System.IO;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 
@@ -22,7 +22,7 @@ namespace EasyNetQ.Trace
         private static readonly BlockingCollection<BasicDeliverEventArgs> deliveryQueue = 
             new BlockingCollection<BasicDeliverEventArgs>(1);
 
-        private static Options options = new Options();
+        private static readonly Options options = new Options();
         private static CSVFile csvFile;
 
 
@@ -36,7 +36,7 @@ namespace EasyNetQ.Trace
                     tokenSource.Cancel();
                 };
 
-            if (CommandLine.Parser.Default.ParseArguments(args, options))
+            if (Parser.Default.ParseArguments(args, options))
             {
 
                 if (options.csvoutput != null)
@@ -44,6 +44,7 @@ namespace EasyNetQ.Trace
                     //Create CSV file and write header row.
                     csvFile = new CSVFile(options.csvoutput);
 
+<<<<<<< HEAD
                     List<string> columnlist = new List<string>();
 
                     columnlist.Add("MessageNo");
@@ -59,6 +60,16 @@ namespace EasyNetQ.Trace
                     {
                         columnlist.Add("Body");
                     }
+=======
+                    var columnlist = new List<string>
+                        {
+                            "Message#", 
+                            "Date Time", 
+                            "Routing Key", 
+                            "Exchange", 
+                            "Body"
+                        };
+>>>>>>> upstream/master
 
                     csvFile.WriteRow(columnlist);
 
@@ -118,7 +129,7 @@ namespace EasyNetQ.Trace
             var connectionFactory = new ConnectionFactory
                 {
                     Uri = connectionString,
-                    ClientProperties = new Dictionary<string, string>
+                    ClientProperties = new Dictionary<string, object>
                         {
                             { "Client", "EasyNetQ.Trace" },
                             { "Host", Environment.MachineName }
@@ -179,7 +190,7 @@ namespace EasyNetQ.Trace
         {
             if (basicDeliverEventArgs == null) return;
 
-            Func<string, object> getHeader = key => basicDeliverEventArgs.BasicProperties.Headers.Contains(key)
+            Func<string, object> getHeader = key => basicDeliverEventArgs.BasicProperties.Headers.ContainsKey(key)
                 ? basicDeliverEventArgs.BasicProperties.Headers[key]
                 : null;
 
@@ -200,12 +211,23 @@ namespace EasyNetQ.Trace
             {
                 //CSV Output
                 //Message#,Date Time,Routing Key,Exchange,Body
+<<<<<<< HEAD
                 List<string> columnlist = new List<string>();
 
                 columnlist.Add(msgCount.ToString());
                 columnlist.Add(DateTime.Now.ToString());
                 columnlist.Add(basicDeliverEventArgs.RoutingKey);
                 columnlist.Add(decode((byte[])getHeader("exchange_name")));
+=======
+                var columnlist = new List<string>
+                    {
+                        msgCount.ToString(CultureInfo.InvariantCulture),
+                        DateTime.Now.ToString(CultureInfo.InvariantCulture),
+                        basicDeliverEventArgs.RoutingKey,
+                        decode((byte[]) getHeader("exchange_name")),
+                        decode(basicDeliverEventArgs.Body)
+                    };
+>>>>>>> upstream/master
 
                 if (options.stats)
                 {
@@ -219,12 +241,6 @@ namespace EasyNetQ.Trace
                 csvFile.WriteRow(columnlist);
 
             }
-
-        }
-
-        static void OutputToCSV()
-        {
-
         }
     }
 
